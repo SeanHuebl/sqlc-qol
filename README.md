@@ -1,5 +1,12 @@
 # sqlc-qol
-CLI Tool to improve the quality of life for devs using SQLC 
+CLI Tool to improve the quality of life for devs, who are using SQLC, with automation.
+Tool is open source if anyone would like to contribute any other features!
+
+# Table of Contents:
+- [Installating the CLI Tool](#installation)
+- [qualify-models](#qualify-models)
+- [add-nosec](#add-nosec)
+
 ## Installation:
 
 You have several options to install **sqlc-qol**:
@@ -41,12 +48,7 @@ After installation, verify that **sqlc-qol** is correctly installed by running:
 ```bash
 sqlc-qol --help
 ```
-
-## Current Features:
-  ### Post Processing:
-  - [qualify-models](#qualify-models)
-  - add-nosec
-  
+ 
 ## qualify-models:
 The `qualify-models` command is designed to streamline your SQLC workflow when you decouple your models from your generated query files. After you move SQLC-generated models into a dedicated external models package (e.g., `internal/models`) for enhanced modularity and decoupling, the SQLC-generated query files still reference model types without a package qualifier. Moreover, every time you run `sqlc generate`, these query files are overwritten, meaning any manual modifications are lost.
 
@@ -122,5 +124,95 @@ In this example, the command:
 - Rewrites the files to qualify model references with `models.` and adds the `internal/models` import if it's missing.
 
 Integrate this tool into your build or post-generation script to ensure your codebase remains clean and modular every time you run `sqlc generate`.
+
+---
+
+## add-nosec:
+
+The `add-nosec` command automates the process of inserting `// #nosec` comments into your SQLC-generated files. This is particularly useful when gosec flags parts of the generated code—such as query constants—for hardcoded credentials. After you've verified that no sensitive credentials are hardcoded in your code, you can safely run `add-nosec` to suppress these false-positive warnings. The usefullness also extends to CI/CD pipelines where running gosec is part of the pull request actions, and will avoid the test failing due to false flagging.
+
+### Overview
+
+- **Purpose:**  
+  Automatically add `// #nosec` comments to specified constant declarations in your SQLC-generated files, ensuring that gosec warnings (e.g., for hardcoded credentials) are suppressed.
+
+- **Why It's Needed:**  
+  SQLC-generated query code can sometimes be flagged by gosec as containing hardcoded credentials—even though these warnings are false positives because the queries don't contain actual sensitive information. Since every run of `sqlc generate` overwrites your files, any manual changes to suppress these warnings are lost. This command re-applies the necessary annotations as part of your automated workflow.
+
+- **Method:**  
+  Leveraging Go’s AST-based processing, the tool locates constant declarations (e.g., for SQL queries) and appends a `// #nosec` comment. This ensures that only the intended sections are annotated, reducing the risk of inadvertently ignoring other security issues.
+
+### Flags
+
+- **`-file`**  
+  - **Description:** Specifies the path to the SQLC-generated file you want to process.  
+  - **Example:**  
+    ```bash
+    -file=internal/database/refresh_tokens.sql.go
+    ```
+
+- **`-target`**  
+  - **Description:** A comma-separated list of constant names (or identifiers) that should have `// #nosec` appended to their declarations.  
+  - **Example:**  
+    ```bash
+    -target=createRefreshToken,revokeToken
+    ```
+
+### Usage Example
+
+After verifying that your generated queries do not contain actual hardcoded credentials, run:
+
+```bash
+sqlc-qol add-nosec -file=internal/database/refresh_tokens.sql.go -target=createRefreshToken,revokeToken
+```
+
+In this example, the command will:
+
+- Open the file `internal/database/refresh_tokens.sql.go`.
+- Search for constant declarations named `createRefreshToken` and `revokeToken`.
+- Append `// #nosec` to these constants to suppress gosec warnings.
+
+### Example of a Processed File
+
+Before running `add-nosec`, your SQLC-generated code might look like this:
+
+```go
+const revokeToken = `-- name: RevokeToken :exec
+UPDATE refresh_tokens
+SET revoked_at = ?1
+WHERE user_id = ?2
+    AND device_info_id = ?3
+    AND revoked_at IS NULL
+`
+```
+
+After processing, the tool automatically appends the comment, resulting in:
+
+```go
+const revokeToken = `-- name: RevokeToken :exec
+UPDATE refresh_tokens
+SET revoked_at = ?1
+WHERE user_id = ?2
+    AND device_info_id = ?3
+    AND revoked_at IS NULL
+` // #nosec
+```
+
+### Workflow Integration
+
+Because `sqlc generate` overwrites your query files each time it's run, manual fixes for gosec warnings are unsustainable. Integrate `add-nosec` into your build or post-generation script to ensure that after every SQLC generation, your files are automatically updated. For example, add the following target to your Makefile:
+
+```makefile
+.PHONY: generate
+generate:
+	sqlc generate
+	sqlc-qol add-nosec -file=internal/database/refresh_tokens.sql.go -target=createRefreshToken,revokeToken
+```
+
+This integration ensures that your codebase remains modular and consistent—automatically suppressing false-positive gosec warnings every time you generate new code.
+
+### Summary
+
+The `add-nosec` command is an essential tool for maintaining security annotations in a dynamic, auto-generated codebase. By automating the insertion of `// #nosec` comments, it saves you from manual intervention and ensures that, once you’ve verified that your SQLC-generated queries are safe, your files remain compliant with your security standards—even after each run of `sqlc generate`.
 
 ---
