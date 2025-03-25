@@ -18,7 +18,7 @@ This command downloads, builds, and installs the tool into your Go bin directory
 
 Alternatively, you can download a pre-built binary for your platform:
 
-1. Visit the [Releases](https://github.com/yourusername/sqlc-qol/releases) page.
+1. Visit the [Releases](https://github.com/seanhuebl/sqlc-qol/releases) page.
 2. Download the binary that matches your operating system and architecture.
 3. Place the binary in a directory that's part of your system's `PATH` (for example, `/usr/local/bin` on Unix-like systems).
 
