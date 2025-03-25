@@ -45,7 +45,7 @@ sqlc-qol --help
 ## Current Features:
   ### Post Processing:
   - [qualify-models](#qualify-models)
-  - addnosec
+  - add-nosec
   
 ## qualify-models:
 The `qualify-models` command is designed to streamline your SQLC workflow when you decouple your models from your generated query files. After you move SQLC-generated models into a dedicated external models package (e.g., `internal/models`) for enhanced modularity and decoupling, the SQLC-generated query files still reference model types without a package qualifier. Moreover, every time you run `sqlc generate`, these query files are overwritten, meaning any manual modifications are lost.
