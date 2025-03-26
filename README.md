@@ -34,7 +34,7 @@ You have several options to install **sqlc-qol**:
 If you have Go installed (version 1.16 or higher is recommended), you can install **sqlc-qol** directly from the source repository using:
 
 ```bash
-go install github.com/yourusername/sqlc-qol@latest
+go install github.com/seanhuebl/sqlc-qol@latest
 ```
 
 This command downloads, builds, and installs the tool into your Go bin directory (usually `$GOPATH/bin` or `$HOME/go/bin`).
@@ -52,7 +52,7 @@ Alternatively, you can download a pre-built binary for your platform:
 If you prefer to build the tool yourself, follow these steps:
 
 ```bash
-git clone https://github.com/yourusername/sqlc-qol.git
+git clone https://github.com/seanhuebl/sqlc-qol.git
 cd sqlc-qol
 go build -o sqlc-qol
 ```
