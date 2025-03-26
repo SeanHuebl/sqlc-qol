@@ -1,6 +1,6 @@
 # sqlc-qol
-CLI Tool to improve the quality of life for devs, who are using SQLC, with automation.
-Tool is open source if anyone would like to contribute any other features!
+CLI Tool to improve the quality of life for devs, who are using SQLC, with automation.\
+Contribution is welcome if you would like to submit any other features!
 
 # Table of Contents:
 - [Installating the CLI Tool](#installation)
