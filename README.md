@@ -7,6 +7,24 @@ Tool is open source if anyone would like to contribute any other features!
 - [qualify-models](#qualify-models)
 - [add-nosec](#add-nosec)
 
+## Directory Tree:
+```plaintext
+sqlc-qol/
+├── cmd/
+│   ├── root.go              # Root command that initializes Cobra.
+│   ├── add-nosec.go         # Implements the 'add-nosec' subcommand.
+│   └── qualify-models.go    # Implements the 'qualify-models' subcommand.
+├── internal/
+│   ├── addnosec/
+│   │   └── addnosec.go      # Business logic for adding // #nosec comments.
+│   └── qualifymodels/
+│       └── qualifymodels.go # Business logic for qualifying model references.
+├── go.mod                   
+├── go.sum                   
+├── main.go                  
+└── README.md                
+```
+
 ## Installation:
 
 You have several options to install **sqlc-qol**:
