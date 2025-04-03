@@ -201,10 +201,11 @@ func Foo() {
 //   - formatNode: formats an AST node and writes it to the provided writer.
 //
 // Only one error is simulated based on the order of evaluation:
-//   1. parseErr
-//   2. globErr
-//   3. createErr
-//   4. formatErr
+//  1. parseErr
+//  2. globErr
+//  3. createErr
+//  4. formatErr
+//
 // If none of the error flags are set, the original functions are returned unmodified.
 //
 // Returns a tuple of four functions corresponding to parseFile, glob, createFile, and formatNode,
