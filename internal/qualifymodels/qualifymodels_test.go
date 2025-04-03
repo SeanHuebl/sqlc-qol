@@ -76,6 +76,34 @@ func FooBar() {
 `,
 		},
 		{
+			name: "simulate parse file error",
+			modelContent: `package models
+type Transaction struct {}
+`,
+			queryContent: `package queries
+func Foo() {
+	var T Transaction
+}
+`,
+			expectedContent:   "",
+			parseErr:          true,
+			expectedErrSubStr: "failed to parse",
+		},
+		{
+			name: "simulate glob error",
+			modelContent: `package models
+type Transaction struct {}
+`,
+			queryContent: `package queries
+func Foo() {
+	var T Transaction
+}
+`,
+			expectedContent:   "",
+			globErr:           true,
+			expectedErrSubStr: "failed to glob query files",
+		},
+		{
 			name: "simulate create file error",
 			modelContent: `package models
 type Transaction struct {}
@@ -88,11 +116,30 @@ func Foo() {
 			expectedContent:   "",
 			createErr:         true,
 			expectedErrSubStr: "failed to open file",
-		},	
+		},
+		{
+			name: "simulate format error",
+			modelContent: `package models
+type Transaction struct {}
+`,
+			queryContent: `package queries
+func Foo() {
+	var T Transaction
+}
+`,
+			expectedContent:   "",
+			formatErr:         true,
+			expectedErrSubStr: "failed to write updated file",
+		},
 	}
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			// reset the testing state to avoid cases bleeding over
+			parseFile = parser.ParseFile
+			glob = filepath.Glob
+			createFile = os.Create
+			formatNode = format.Node
 
 			tmpDir := t.TempDir()
 
@@ -132,6 +179,36 @@ func Foo() {
 
 // Helpers
 
+// executeErrors returns a modified set of function dependencies that simulate error conditions
+// for testing purposes. It accepts a testCase struct with various error flags and the original
+// implementations of four functions: parseFile, glob, createFile, and formatNode. Depending on
+// which error flag in testCase is set to true, it replaces the corresponding function with a stub
+// that returns a simulated error.
+//
+// The testCase struct contains the following fields:
+//   - name: a descriptive name for the test case.
+//   - modelContent, queryContent, expectedContent: strings representing test input and expected output.
+//   - createErr: if true, the createFile function is replaced to simulate a file creation error.
+//   - parseErr: if true, the parseFile function is replaced to simulate a parsing error.
+//   - globErr: if true, the glob function is replaced to simulate a glob matching error.
+//   - formatErr: if true, the formatNode function is replaced to simulate a formatting error.
+//   - expectedErrSubStr: a substring expected to be present in the error message.
+//
+// The functions provided are as follows:
+//   - parseFile: parses a source file and returns its AST representation.
+//   - glob: finds files matching a pattern.
+//   - createFile: creates a file with the specified name.
+//   - formatNode: formats an AST node and writes it to the provided writer.
+//
+// Only one error is simulated based on the order of evaluation:
+//   1. parseErr
+//   2. globErr
+//   3. createErr
+//   4. formatErr
+// If none of the error flags are set, the original functions are returned unmodified.
+//
+// Returns a tuple of four functions corresponding to parseFile, glob, createFile, and formatNode,
+// where each function may be the original or a stub that returns a simulated error.
 func executeErrors(
 	testCase struct {
 		name              string
