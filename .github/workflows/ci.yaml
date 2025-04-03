@@ -1,0 +1,33 @@
+name: CI
+
+on: 
+    pull_request:
+        branches: [ main ]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v3
+
+            - name: Set up go
+              uses: actions/setup-go@v4
+              with:
+                go-version: '1.23'
+            
+            - name: Build
+              run: go build -v ./...
+            
+            - name: Run tests
+              run: go test -v ./...
+
+            - name: Install gosec
+              run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+            - name: Run gosec
+              run: gosec ./...
+
+            - name: Run fmt
+              run: go fmt ./...
