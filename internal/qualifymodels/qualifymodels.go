@@ -14,6 +14,13 @@ import (
 	"golang.org/x/tools/go/ast/astutil"
 )
 
+var (
+	createFile = os.Create
+	parseFile  = parser.ParseFile
+	glob       = filepath.Glob
+	formatNode = format.Node
+)
+
 // Run processes SQLC-generated query files to qualify model references.
 // It takes three parameters:
 //
@@ -25,11 +32,11 @@ import (
 func Run(modelPath, queryGlob, modelImport string) error {
 	// Create new file set and parse the models file.
 	fset := token.NewFileSet()
-	modelFile, err := parser.ParseFile(fset, modelPath, nil, parser.ParseComments)
-		if err != nil {
-			return fmt.Errorf("failed to parse model file: %w", err)
-		}
-	
+	modelFile, err := parseFile(fset, modelPath, nil, parser.ParseComments)
+	if err != nil {
+		return fmt.Errorf("failed to parse model file: %w", err)
+	}
+
 	// Extract all struct names defined in the models file.
 	modelNames := make(map[string]bool)
 	for _, decl := range modelFile.Decls {
@@ -51,7 +58,7 @@ func Run(modelPath, queryGlob, modelImport string) error {
 	pkgAlias := path.Base(modelImport)
 
 	// Find all query files that match the provided glob pattern.
-	files, err := filepath.Glob(queryGlob)
+	files, err := glob(queryGlob)
 	if err != nil {
 		return fmt.Errorf("failed to glob query files: %w", err)
 	}
@@ -59,7 +66,7 @@ func Run(modelPath, queryGlob, modelImport string) error {
 	// Process the query files
 	for _, file := range files {
 		fsetQuery := token.NewFileSet()
-		queryFile, err := parser.ParseFile(fsetQuery, file, nil, parser.ParseComments)
+		queryFile, err := parseFile(fsetQuery, file, nil, parser.ParseComments)
 		if err != nil {
 			return fmt.Errorf("failed to parse query file %s: %w", file, err)
 		}
@@ -70,7 +77,7 @@ func Run(modelPath, queryGlob, modelImport string) error {
 			if !ok {
 				return true
 			}
-			
+
 			// Check if ident matches one of the model names
 			if modelNames[ident.Name] {
 				// If ident is already part of selector expression skip
@@ -79,7 +86,7 @@ func Run(modelPath, queryGlob, modelImport string) error {
 				}
 				// Replace bare ident with qualified selector expression (e.g, models.Transaction)
 				newNode := &ast.SelectorExpr{
-					X: ast.NewIdent(pkgAlias),
+					X:   ast.NewIdent(pkgAlias),
 					Sel: ast.NewIdent(ident.Name),
 				}
 				c.Replace(newNode)
@@ -88,14 +95,14 @@ func Run(modelPath, queryGlob, modelImport string) error {
 		}, nil)
 
 		astutil.AddImport(fsetQuery, queryFile, modelImport)
-		
-		outFile, err := os.Create(file)
+
+		outFile, err := createFile(file)
 		if err != nil {
 			return fmt.Errorf("failed to open file %s for writing: %w", file, err)
 		}
 		defer outFile.Close()
 
-		if err := format.Node(outFile, fsetQuery, queryFile); err != nil {
+		if err := formatNode(outFile, fsetQuery, queryFile); err != nil {
 			return fmt.Errorf("failed to write updated file %s: %w", file, err)
 		}
 	}
