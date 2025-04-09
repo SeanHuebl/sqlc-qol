@@ -19,6 +19,11 @@ var (
 	glob       = filepath.Glob
 	createFile = os.Create
 	formatNode = format.Node
+	
+	openFile   = os.Open
+	pathAbs    = filepath.Abs
+	baseAbs    = filepath.Abs
+	hasPrefix  = strings.HasPrefix
 )
 
 func Run(queryGlob, targets, csvPath string) error {
@@ -102,7 +107,7 @@ func parseTargetsCSV(csvPath string) (map[string]bool, error) {
 	}
 	// after sanitizing the path to make sure it is safe to open
 	// we can tell the security analyzer that it is safe to ignore
-	f, err := os.Open(safePath) // #nosec
+	f, err := openFile(safePath) // #nosec
 	if err != nil {
 		return nil, fmt.Errorf("failed to open CSV file: %w", err)
 	}
@@ -137,15 +142,15 @@ func parseTargets(targets string) map[string]bool {
 }
 
 func sanitizePath(csvPath, baseDir string) (string, error) {
-	absPath, err := filepath.Abs(csvPath)
+	absPath, err := pathAbs(csvPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to get absolute path: %w", err)
 	}
-	baseAbs, err := filepath.Abs(baseDir)
+	baseAbs, err := baseAbs(baseDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get absolute base directory: %w", err)
 	}
-	if !strings.HasPrefix(absPath, baseAbs) {
+	if !hasPrefix(absPath, baseAbs) {
 		return "", fmt.Errorf("invalid path: %q is not within the allowed directory %q", absPath, baseAbs)
 	}
 	return absPath, nil
