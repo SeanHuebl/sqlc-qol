@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/seanhuebl/sqlc-qol/internal/config"
 	"golang.org/x/tools/go/ast/astutil"
 )
 
@@ -19,19 +20,19 @@ var (
 	glob       = filepath.Glob
 	createFile = os.Create
 	formatNode = format.Node
-	
-	openFile   = os.Open
-	pathAbs    = filepath.Abs
-	baseAbs    = filepath.Abs
-	hasPrefix  = strings.HasPrefix
+
+	openFile  = os.Open
+	pathAbs   = filepath.Abs
+	baseAbs   = filepath.Abs
+	hasPrefix = strings.HasPrefix
 )
 
-func Run(queryGlob, targets, csvPath string) error {
+func Run(queryGlob, targets, csvPath string, config config.Config) error {
 	var targetMap map[string]bool
 	var err error
 
 	if csvPath != "" {
-		targetMap, err = parseTargetsCSV(csvPath)
+		targetMap, err = parseTargetsCSV(csvPath, config.AllowedBaseDir)
 		if err != nil {
 			return fmt.Errorf("error parsing CSV file: %w", err)
 		}
@@ -98,9 +99,8 @@ func Run(queryGlob, targets, csvPath string) error {
 	return nil
 }
 
-func parseTargetsCSV(csvPath string) (map[string]bool, error) {
+func parseTargetsCSV(csvPath, allowedBaseDir string) (map[string]bool, error) {
 	// while low risk in CLI, sanitizing to protect users as much as possible from security risk
-	const allowedBaseDir = "./data"
 	safePath, err := sanitizePath(csvPath, allowedBaseDir)
 	if err != nil {
 		return nil, err

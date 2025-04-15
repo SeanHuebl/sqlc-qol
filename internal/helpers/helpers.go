@@ -25,12 +25,14 @@ type QualifymodelsTC struct {
 }
 type AddnosecTC struct {
 	BaseTestCase
-	csvPath    string
-	targets    string
-	openErr    bool
-	pathErr    bool
-	baseDirErr bool
-	prefixErr  bool
+	HasCsv      bool
+	CsvTargets  string
+	InitContent string
+	Targets     string
+	OpenErr     bool
+	PathErr     bool
+	BaseDirErr  bool
+	PrefixErr   bool
 }
 
 // executeErrors returns a modified set of function dependencies that simulate error conditions
@@ -124,7 +126,8 @@ func ExecuteBaseTCErrors(
 //
 // The testCase struct contains the following fields:
 //   - csvPath: the path to a CSV file used in the test.
-//   - targets: a string representing one or more paths to be processed.
+//   - initContent: the content to be transformed
+//   - targets: a string representing one or more (seperated by commas) const decl to be processed.
 //   - openErr: if true, the openFile function is replaced to simulate a file opening error.
 //   - pathErr: if true, the pathAbs function is replaced to simulate an absolute path resolution error.
 //   - baseDirErr: if true, the baseAbs function is replaced to simulate a base directory resolution error.
@@ -164,25 +167,25 @@ func ExecuteAddnosecErrors(
 	bA := baseAbs
 	hP := hasPrefix
 
-	if tc.openErr {
+	if tc.OpenErr {
 		oF = func(name string) (*os.File, error) {
 			return nil, fmt.Errorf("simulated open file error")
 		}
 		return oF, pA, bA, hP
 	}
-	if tc.pathErr {
+	if tc.PathErr {
 		pA = func(path string) (string, error) {
 			return "", fmt.Errorf("simulated path error")
 		}
 		return oF, pA, bA, hP
 	}
-	if tc.baseDirErr {
+	if tc.BaseDirErr {
 		bA = func(path string) (string, error) {
 			return "", fmt.Errorf("simulated base directory error")
 		}
 		return oF, pA, bA, hP
 	}
-	if tc.prefixErr {
+	if tc.PrefixErr {
 		hP = func(s, prefix string) bool {
 			return false
 		}
