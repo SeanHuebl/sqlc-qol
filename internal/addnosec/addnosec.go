@@ -36,7 +36,7 @@ func Run(queryGlob, targets, csvPath string, config config.Config) error {
 	} else if targets == "" && csvPath == "" {
 		return fmt.Errorf("must specify either targets or csvPath")
 	}
-	
+
 	if csvPath != "" {
 		targetMap, err = parseTargetsCSV(csvPath, config.AllowedBaseDir)
 		if err != nil {
