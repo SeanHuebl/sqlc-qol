@@ -161,36 +161,34 @@ func ExecuteAddnosecErrors(
 	func(path string) (string, error),
 	func(s string, prefix string) bool,
 ) {
-	tc := testCase
 	oF := openFile
 	pA := pathAbs
 	bA := baseAbs
 	hP := hasPrefix
 
-	if tc.OpenErr {
+	if testCase.OpenErr {
 		oF = func(name string) (*os.File, error) {
 			return nil, fmt.Errorf("simulated open file error")
 		}
 		return oF, pA, bA, hP
 	}
-	if tc.PathErr {
+	if testCase.PathErr {
 		pA = func(path string) (string, error) {
 			return "", fmt.Errorf("simulated path error")
 		}
 		return oF, pA, bA, hP
 	}
-	if tc.BaseDirErr {
+	if testCase.BaseDirErr {
 		bA = func(path string) (string, error) {
 			return "", fmt.Errorf("simulated base directory error")
 		}
 		return oF, pA, bA, hP
 	}
-	if tc.PrefixErr {
+	if testCase.PrefixErr {
 		hP = func(s, prefix string) bool {
 			return false
 		}
 		return oF, pA, bA, hP
 	}
-
 	return oF, pA, bA, hP
 }

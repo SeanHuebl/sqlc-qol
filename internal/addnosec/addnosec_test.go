@@ -82,6 +82,131 @@ const c = "false flagged hardcoded credentials"
 			HasCsv:     true,
 			CsvTargets: "bar,foobar,c",
 		},
+		{
+			BaseTestCase: helpers.BaseTestCase{
+				Name:              "simulate parse file error",
+				ExpectedContent:   "",
+				ParseErr:          true,
+				ExpectedErrSubStr: "failed to parse",
+			},
+			InitContent: `package foo
+const bar = "false flagged hardcoded credentials"
+`,
+			Targets: "bar",
+		},
+		{
+			BaseTestCase: helpers.BaseTestCase{
+				Name:              "simulate glob error",
+				ExpectedContent:   "",
+				GlobErr:           true,
+				ExpectedErrSubStr: "failed to glob files with pattern",
+			},
+			InitContent: `package foo
+const bar = "false flagged hardcoded credentials"
+`,
+			Targets: "bar",
+		},
+		{
+			BaseTestCase: helpers.BaseTestCase{
+				Name:              "simulate create file error",
+				ExpectedContent:   "",
+				CreateErr:         true,
+				ExpectedErrSubStr: "failed to open file",
+			},
+			InitContent: `package foo
+const bar = "false flagged hardcoded credentials"
+`,
+			Targets: "bar",
+		},
+		{
+			BaseTestCase: helpers.BaseTestCase{
+				Name:              "simulate format error",
+				ExpectedContent:   "",
+				FormatErr:         true,
+				ExpectedErrSubStr: "failed to write formatted file",
+			},
+			InitContent: `package foo
+const bar = "false flagged hardcoded credentials"
+`,
+			Targets: "bar",
+		},
+		{
+			BaseTestCase: helpers.BaseTestCase{
+				Name:              "simulate openFile error",
+				ExpectedContent:   "",
+				ExpectedErrSubStr: "failed to open CSV file",
+			},
+			InitContent: `package foo
+const bar = "false flagged hardcoded credentials"
+`,
+			HasCsv:     true,
+			OpenErr:    true,
+			CsvTargets: "bar",
+		},
+		{
+			BaseTestCase: helpers.BaseTestCase{
+				Name:              "simulate pathAbs error",
+				ExpectedContent:   "",
+				ExpectedErrSubStr: "failed to get absolute path",
+			},
+			InitContent: `package foo
+const bar = "false flagged hardcoded credentials"
+`,
+			HasCsv:     true,
+			PathErr:    true,
+			CsvTargets: "bar",
+		},
+		{
+			BaseTestCase: helpers.BaseTestCase{
+				Name:              "simulate baseAbs error",
+				ExpectedContent:   "",
+				ExpectedErrSubStr: "failed to get absolute base directory",
+			},
+			InitContent: `package foo
+const bar = "false flagged hardcoded credentials"
+`,
+			HasCsv:     true,
+			BaseDirErr: true,
+			CsvTargets: "bar",
+		},
+		{
+			BaseTestCase: helpers.BaseTestCase{
+				Name:              "simulate hasPrefix error",
+				ExpectedContent:   "",
+				ExpectedErrSubStr: "is not within the allowed directory",
+			},
+			InitContent: `package foo
+const bar = "false flagged hardcoded credentials"
+`,
+			HasCsv:     true,
+			PrefixErr:  true,
+			CsvTargets: "bar",
+		},
+		{
+			BaseTestCase: helpers.BaseTestCase{
+				Name:              "both csv and targets filled",
+				ExpectedContent:   "",
+				ExpectedErrSubStr: "cannot specify both targets and csvPath",
+			},
+			InitContent: `package foo
+const bar = "false flagged hardcoded credentials"
+`,
+			HasCsv:     true,
+			CsvTargets: "bar",
+			Targets:    "bar",
+		},
+		{
+			BaseTestCase: helpers.BaseTestCase{
+				Name:              "both csv and targets empty",
+				ExpectedContent:   "",
+				ExpectedErrSubStr: "must specify either targets or csvPath",
+			},
+			InitContent: `package foo
+const bar = "false flagged hardcoded credentials"
+`,
+			HasCsv:  false,
+			Targets: "",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.Name, func(t *testing.T) {
@@ -92,11 +217,6 @@ const c = "false flagged hardcoded credentials"
 			createFile = os.Create
 			formatNode = format.Node
 
-			openFile = os.Open
-			pathAbs = filepath.Abs
-			baseAbs = filepath.Abs
-			hasPrefix = strings.HasPrefix
-
 			tmpDir := t.TempDir()
 
 			contentFile := filepath.Join(tmpDir, "content.sql.go")
@@ -104,10 +224,17 @@ const c = "false flagged hardcoded credentials"
 				t.Fatalf("failed to write content file: %v", err)
 			}
 			parseFile, glob, createFile, formatNode = helpers.ExecuteBaseTCErrors(tc.BaseTestCase, parseFile, glob, createFile, formatNode)
-			openFile, pathAbs, baseAbs, hasPrefix = helpers.ExecuteAddnosecErrors(tc, openFile, pathAbs, baseAbs, hasPrefix)
+
 			var err error
 			var tempCSV *os.File
 			if tc.HasCsv {
+				openFile = os.Open
+				pathAbs = filepath.Abs
+				baseAbs = filepath.Abs
+				hasPrefix = strings.HasPrefix
+
+				openFile, pathAbs, baseAbs, hasPrefix = helpers.ExecuteAddnosecErrors(tc, openFile, pathAbs, baseAbs, hasPrefix)
+
 				tmpDataDir := filepath.Join(tmpDir, "data")
 				os.Mkdir(tmpDataDir, 0755)
 

@@ -31,6 +31,12 @@ func Run(queryGlob, targets, csvPath string, config config.Config) error {
 	var targetMap map[string]bool
 	var err error
 
+	if csvPath != "" && targets != "" {
+		return fmt.Errorf("cannot specify both targets and csvPath")
+	} else if targets == "" && csvPath == "" {
+		return fmt.Errorf("must specify either targets or csvPath")
+	}
+	
 	if csvPath != "" {
 		targetMap, err = parseTargetsCSV(csvPath, config.AllowedBaseDir)
 		if err != nil {
