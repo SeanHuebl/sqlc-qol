@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	createFile = os.Create
 	parseFile  = parser.ParseFile
 	glob       = filepath.Glob
+	createFile = os.Create
 	formatNode = format.Node
 )
 
