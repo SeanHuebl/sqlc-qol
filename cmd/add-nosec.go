@@ -28,7 +28,7 @@ It adds a // #nosec comment to the const declaration to ignore the gosec warning
 		StringVarP(&addTargets,
 			"targets", "t",
 			"",
-			"Comma-separated list of target consts to add gosec ignore comments for")
+			"comma-separated list of target consts to add gosec ignore comments for")
 
 	cmd.Flags().
 		StringVarP(&addCSV,
