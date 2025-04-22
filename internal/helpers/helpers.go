@@ -132,6 +132,7 @@ func ExecuteBaseTCErrors(
 //   - pathErr: if true, the pathAbs function is replaced to simulate an absolute path resolution error.
 //   - baseDirErr: if true, the baseAbs function is replaced to simulate a base directory resolution error.
 //   - prefixErr: if true, the hasPrefix function is replaced to always return false.
+//   - expectedErrSubStr: a substring expected to be present in the error message.
 //
 // The functions provided are as follows:
 //   - openFile: opens a file by name and returns an os.File pointer.
