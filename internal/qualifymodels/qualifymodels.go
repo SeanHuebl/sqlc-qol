@@ -31,8 +31,8 @@ type sqlcConfig struct {
 }
 
 // Detects if SQLC is modern v2 post PR #3874 on March 6, 2025 to determine if qualify models is needed.
-func isSQLCModern(configPath string) bool {
-	data, err := os.ReadFile(configPath)
+func isSQLCModern() bool {
+	data, err := os.ReadFile("sqlc.yaml")
 	if err != nil {
 		return false
 	}
@@ -54,7 +54,7 @@ func isSQLCModern(configPath string) bool {
 // - modelImport: the import path for the external models package (e.g, "internal/models")
 func Run(modelPath, queryGlob, modelImport string) error {
 	// Check if the SQLC config is modern v2
-	if isSQLCModern("sqlc.yaml") {
+	if isSQLCModern() {
 		fmt.Println("Detected native SQLC model qualification, skipping qualify-models")
 		return nil
 	}
