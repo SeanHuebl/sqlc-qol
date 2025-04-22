@@ -27,6 +27,29 @@ var (
 	hasPrefix = strings.HasPrefix
 )
 
+// Run scans all Go source files matching queryGlob and appends a “// #nosec” comment
+// to any const declarations whose names you’ve specified via targets or csvPath.
+// You must supply exactly one of targets (a comma‑separated list) or csvPath
+// (pointing to a CSV file under config.AllowedBaseDir); otherwise Run returns an error.
+//
+// It works by:
+//  1. Building a map of target names (from CSV or comma list).
+//  2. Globbing for files via queryGlob.
+//  3. Parsing each file’s AST, finding ast.ValueSpec nodes whose names match targets,
+//     and injecting a `// #nosec` comment if one isn’t already present.
+//  4. Rewriting each file in place with go/format.
+//
+// Parameters:
+//   - queryGlob: glob pattern for selecting .go files (e.g. "internal/database/*.sql.go")
+//   - targets: comma‑separated const names (mutually exclusive with csvPath)
+//   - csvPath: path to a no‑header CSV listing const names (mutually exclusive with targets)
+//   - config: holds AllowedBaseDir for sanitizing CSV paths
+//
+// Returns an error if:
+//   - both or neither of targets/csvPath are provided,
+//   - the CSV cannot be read/parsed or lies outside AllowedBaseDir,
+//   - globbing fails,
+//   - any file can’t be parsed, opened, or written.
 func Run(queryGlob, targets, csvPath string, config config.Config) error {
 	var targetMap map[string]bool
 	var err error

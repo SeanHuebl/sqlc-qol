@@ -44,14 +44,32 @@ func isSQLCModern() bool {
 		cfg.Gen.Go.ModelsPackageImportPath != ""
 }
 
-// Run processes SQLC-generated query files to qualify model references.
-// It takes three parameters:
+// Run processes SQLC-generated query files and qualifies bare model type
+// references by prefixing them with a package alias and injecting the
+// corresponding import. If SQLC v2+ native model qualification is detected
+// via isSQLCModern(), it logs a message and exits without modifying any files.
 //
-// - modelPath: path to the file containing the external models (e.g., "internal/models/database.go")
+// Workflow:
+//  1. Check for native SQLC qualification support; if present, skip processing.
+//  2. Parse the models file at modelPath and collect all struct type names.
+//  3. Derive the package alias from modelImport (last path element).
+//  4. Glob for all query files matching queryGlob.
+//  5. For each file:
+//     a) Parse its AST and traverse all identifiers.
+//     b) When an identifier matches a model name and is not already
+//     part of a selector, replace it with `alias.Identifier`.
+//     c) Ensure the import for modelImport is present.
+//     d) Rewrite the file in place with `go/format`.
 //
-// - queryGlob: a glob pattern to match SQLC-generated query files (e.g, "internal/database/*.sql.go")
+// Parameters:
+//   - modelPath:       Path to the Go source file defining your models.
+//   - queryGlob:       Glob pattern to match SQLC‑generated `.sql.go` files.
+//   - modelImport:     Import path for your external models package.
 //
-// - modelImport: the import path for the external models package (e.g, "internal/models")
+// Returns:
+//   - error: Any error encountered while parsing, globbing, or writing files.
+//     Returns nil if native SQLC qualification is enabled or if all
+//     files are successfully processed.
 func Run(modelPath, queryGlob, modelImport string) error {
 	// Check if the SQLC config is modern v2
 	if isSQLCModern() {
