@@ -51,8 +51,6 @@ var (
 //   - globbing fails,
 //   - any file can’t be parsed, opened, or written.
 func Run(queryGlob, targets, csvPath string, config config.Config) error {
-	fmt.Fprintf(os.Stderr, "DEBUG: loading targets from %q or %q\n", targets, csvPath)
-
 	var targetMap map[string]bool
 	var err error
 
@@ -70,10 +68,6 @@ func Run(queryGlob, targets, csvPath string, config config.Config) error {
 	} else {
 		targetMap = parseTargets(targets)
 	}
-	fmt.Fprintf(os.Stderr, "DEBUG: targetMap = %#v\n", targetMap)
-	cwd, _ := os.Getwd()
-	fmt.Fprintf(os.Stderr, "DEBUG: cwd=%q, glob=%q\n", cwd, queryGlob)
-
 	files, err := glob(queryGlob)
 	fmt.Fprintf(os.Stderr, "DEBUG: glob found %d files, err=%v\n", len(files), err)
 	if err != nil {
@@ -81,14 +75,17 @@ func Run(queryGlob, targets, csvPath string, config config.Config) error {
 	}
 
 	for _, file := range files {
-		fmt.Printf("Processing file: %s\n", file)
 
 		fset := token.NewFileSet()
 		f, err := parseFile(fset, file, nil, parser.ParseComments)
 		if err != nil {
 			return fmt.Errorf("failed to parse file %s: %w", file, err)
 		}
-
+		origComments := f.Comments
+		commentMap := ast.NewCommentMap(fset, f, origComments)
+		if commentMap == nil {
+			commentMap = make(ast.CommentMap)
+		}
 		astutil.Apply(f, func(c *astutil.Cursor) bool {
 			valSpec, ok := c.Node().(*ast.ValueSpec)
 			if !ok {
@@ -96,45 +93,41 @@ func Run(queryGlob, targets, csvPath string, config config.Config) error {
 			}
 			for _, name := range valSpec.Names {
 				if targetMap[name.Name] {
-					fmt.Printf("  → tagging const %q in %s\n", name.Name, file)
-					hasNoSec := false
-					if valSpec.Comment != nil {
-						for _, comment := range valSpec.Comment.List {
-							if strings.Contains(comment.Text, "#nosec") {
-								hasNoSec = true
-								break
+					if hasNoSec := func() bool {
+						if valSpec.Comment != nil {
+							for _, cm := range valSpec.Comment.List {
+								if strings.Contains(cm.Text, "#nosec") {
+									return true
+								}
 							}
 						}
+						return false
+					}(); hasNoSec {
+						continue
 					}
-					if !hasNoSec {
-						newComment := &ast.Comment{
-							Slash: name.End(),
-							Text:  "// #nosec",
-						}
-						if valSpec.Comment == nil {
-							valSpec.Comment = &ast.CommentGroup{
-								List: []*ast.Comment{newComment},
-							}
-						} else {
-							valSpec.Comment.List = append(valSpec.Comment.List, newComment)
-						}
-
+					cg := &ast.CommentGroup{
+						List: []*ast.Comment{
+							{
+								Slash: valSpec.End(),
+								Text:  "// #nosec",
+							},
+						},
 					}
+					commentMap[valSpec] = append(commentMap[valSpec], cg)
 				}
 			}
+
 			return true
 		}, nil)
-		fmt.Fprintf(os.Stderr, "DEBUG: opening %s for writing\n", file)
+		f.Comments = commentMap.Comments()
 		outFile, err := createFile(file)
 		if err != nil {
 			return fmt.Errorf("failed to open file %s for writing: %w", file, err)
 		}
 		defer outFile.Close()
-		fmt.Fprintf(os.Stderr, "DEBUG: writing formatted AST to %s\n", file)
 		if err := formatNode(outFile, fset, f); err != nil {
 			return fmt.Errorf("failed to write formatted file %s: %w", file, err)
 		}
-		fmt.Fprintf(os.Stderr, "DEBUG: write complete for %s\n", file)
 	}
 	return nil
 }
