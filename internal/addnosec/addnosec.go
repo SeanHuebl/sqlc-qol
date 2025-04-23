@@ -69,7 +69,6 @@ func Run(queryGlob, targets, csvPath string, config config.Config) error {
 		targetMap = parseTargets(targets)
 	}
 	files, err := glob(queryGlob)
-	fmt.Fprintf(os.Stderr, "DEBUG: glob found %d files, err=%v\n", len(files), err)
 	if err != nil {
 		return fmt.Errorf("failed to glob files with pattern %q: %w", queryGlob, err)
 	}
