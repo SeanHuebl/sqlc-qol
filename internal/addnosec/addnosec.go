@@ -77,6 +77,8 @@ func Run(queryGlob, targets, csvPath string, config config.Config) error {
 	}
 
 	for _, file := range files {
+		fmt.Printf("Processing file: %s\n", file)
+
 		fset := token.NewFileSet()
 		f, err := parseFile(fset, file, nil, parser.ParseComments)
 		if err != nil {
@@ -90,6 +92,7 @@ func Run(queryGlob, targets, csvPath string, config config.Config) error {
 			}
 			for _, name := range valSpec.Names {
 				if targetMap[name.Name] {
+					fmt.Printf("  → tagging const %q in %s\n", name.Name, file)
 					hasNoSec := false
 					if valSpec.Comment != nil {
 						for _, comment := range valSpec.Comment.List {
