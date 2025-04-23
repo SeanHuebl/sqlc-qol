@@ -51,6 +51,8 @@ var (
 //   - globbing fails,
 //   - any file can’t be parsed, opened, or written.
 func Run(queryGlob, targets, csvPath string, config config.Config) error {
+	fmt.Fprintf(os.Stderr, "DEBUG: loading targets from %q or %q\n", targets, csvPath)
+
 	var targetMap map[string]bool
 	var err error
 
@@ -68,7 +70,7 @@ func Run(queryGlob, targets, csvPath string, config config.Config) error {
 	} else {
 		targetMap = parseTargets(targets)
 	}
-
+	fmt.Fprintf(os.Stderr, "DEBUG: targetMap = %#v\n", targetMap)
 	files, err := glob(queryGlob)
 	if err != nil {
 		return fmt.Errorf("failed to glob files with pattern %q: %w", queryGlob, err)
