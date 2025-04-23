@@ -124,15 +124,17 @@ func Run(queryGlob, targets, csvPath string, config config.Config) error {
 			}
 			return true
 		}, nil)
+		fmt.Fprintf(os.Stderr, "DEBUG: opening %s for writing\n", file)
 		outFile, err := createFile(file)
 		if err != nil {
 			return fmt.Errorf("failed to open file %s for writing: %w", file, err)
 		}
 		defer outFile.Close()
-
+		fmt.Fprintf(os.Stderr, "DEBUG: writing formatted AST to %s\n", file)
 		if err := formatNode(outFile, fset, f); err != nil {
 			return fmt.Errorf("failed to write formatted file %s: %w", file, err)
 		}
+		fmt.Fprintf(os.Stderr, "DEBUG: write complete for %s\n", file)
 	}
 	return nil
 }
