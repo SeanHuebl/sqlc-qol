@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/seanhuebl/sqlc-qol/internal/addnosec"
+	"github.com/seanhuebl/sqlc-qol/v2/internal/addnosec"
 	"github.com/spf13/cobra"
 )
 

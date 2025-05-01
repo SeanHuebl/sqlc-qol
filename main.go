@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/seanhuebl/sqlc-qol/cmd"
+	"github.com/seanhuebl/sqlc-qol/v2/cmd"
 )
 
 func main() {

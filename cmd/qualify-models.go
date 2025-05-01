@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/seanhuebl/sqlc-qol/internal/qualifymodels"
+	"github.com/seanhuebl/sqlc-qol/v2/internal/qualifymodels"
 	"github.com/spf13/cobra"
 )
 

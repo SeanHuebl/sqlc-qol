@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/seanhuebl/sqlc-qol/internal/config"
-	"github.com/seanhuebl/sqlc-qol/internal/helpers"
+	"github.com/seanhuebl/sqlc-qol/v2/internal/config"
+	"github.com/seanhuebl/sqlc-qol/v2/internal/helpers"
 	"github.com/stretchr/testify/require"
 )
 

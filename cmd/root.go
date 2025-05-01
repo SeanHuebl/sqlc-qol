@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/seanhuebl/sqlc-qol/internal/config"
+	"github.com/seanhuebl/sqlc-qol/v2/internal/config"
 	"github.com/spf13/cobra"
 )
 

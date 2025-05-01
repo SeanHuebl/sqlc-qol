@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/seanhuebl/sqlc-qol/internal/config"
+	"github.com/seanhuebl/sqlc-qol/v2/internal/config"
 	"golang.org/x/tools/go/ast/astutil"
 )
 

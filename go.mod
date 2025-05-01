@@ -1,4 +1,4 @@
-module github.com/seanhuebl/sqlc-qol
+module github.com/seanhuebl/sqlc-qol/v2
 
 go 1.24.1
 
