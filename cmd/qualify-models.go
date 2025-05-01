@@ -35,8 +35,8 @@ the SQLC models into an external global models package`,
 
 	cmd.Flags().
 		StringVarP(&rootDbDir,
-			"rootdbdir",
-			"r",
+			"dir",
+			"d",
 			"",
 			"root directory where your database files live (e.g. internal/database)")
 	_ = cmd.MarkFlagRequired("queries")

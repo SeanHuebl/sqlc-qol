@@ -112,7 +112,7 @@ sqlc-qol qualify-models \
 **Flags**:
 
 - `--models`, `-m` (required): Path to your Go source file containing model definitions (e.g., `internal/models/database.go`).
-- `--queries`, `-q` (required): Glob pattern matching SQLC‑generated `.sql.go` files (e.g., `"internal/database/*.sql.go"`).
+- `--dir`, `-d` (required): root directory where your database files live (e.g. `internal/database`).
 - `--import`, `-i` (required): Import path for your models package (e.g., `internal/models`).
 
 #### add-nosec
@@ -173,22 +173,39 @@ sqlc-qol/
 To automate post‑generation tasks in a Makefile:
 
 ```makefile
-.PHONY: generate postprocess
+.PHONY: all generate postprocess move rename qualify mocks
+
+all: generate postprocess move rename qualify mocks
 
 generate:
- # Regenerate SQLC code
  sqlc generate
 
+# suppress false positives
 postprocess: generate
- # Qualify model references
- sqlc-qol qualify-models \
-   --models internal/models/database.go \
-   --queries "internal/database/*.sql.go" \
-   --import internal/models
- # Suppress gosec false positives
  sqlc-qol add-nosec \
-   --queryglob "internal/database/*.sql.go" \
-   --targets createRefreshToken,revokeToken
+ "internal/database/*.sql.go" \
+ --csv=./data/targets.csv
+
+# move the models file to the globel models pkg
+move:
+ mv ./internal/database/models.go ./internal/models/db.go
+
+# rename the package name to models
+rename: move
+ sed -i "s/^package database$$/package models/" internal/models/db.go
+
+# qualify all the models in all the files within database dir (-d)
+qualify: rename move
+ sqlc-qol qualify-models \
+ -m internal/models/db.go \
+ -d internal/database \
+ -i github.com/seanhuebl/unity-wealth/internal/models
+ goimports -w internal/database
+
+# finish by regenerating mocks
+mocks: qualify
+ mockery --config mockery_database.yaml
+ mockery --config mockery_auth.yaml
 ```
 
 You can also integrate these commands into CI pipelines (GitHub Actions, GitLab CI, etc.) to ensure consistency on every build.
