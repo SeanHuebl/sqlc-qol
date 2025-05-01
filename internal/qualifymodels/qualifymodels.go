@@ -102,6 +102,7 @@ func Run(modelPath, rootDbDir, modelImport string) error {
 			return fmt.Errorf("failed to parse query file %s: %w", file, err)
 		}
 
+		replaced := false
 		// Traverse AST to find bare identifiers that match the model names.
 		astutil.Apply(queryFile, func(c *astutil.Cursor) bool {
 			ident, ok := c.Node().(*ast.Ident)
@@ -121,11 +122,14 @@ func Run(modelPath, rootDbDir, modelImport string) error {
 					Sel: ast.NewIdent(ident.Name),
 				}
 				c.Replace(newNode)
+				replaced = true
 			}
 			return true
 		}, nil)
 
-		astutil.AddImport(fsetQuery, queryFile, modelImport)
+		if replaced {
+			astutil.AddImport(fsetQuery, queryFile, modelImport)
+		}
 
 		// This is so the defer happens after each file is processed
 		// and not after all files are processed
