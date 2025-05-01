@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 
 	"golang.org/x/tools/go/ast/astutil"
-	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -28,20 +27,6 @@ type sqlcConfig struct {
 			ModelsPackageImportPath string `yaml:"models_package_import_path"`
 		}
 	}
-}
-
-// Detects if SQLC is modern v2 post PR #3874 on March 6, 2025 to determine if qualify models is needed.
-func isSQLCModern() bool {
-	data, err := os.ReadFile("sqlc.yaml")
-	if err != nil {
-		return false
-	}
-	var cfg sqlcConfig
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return false
-	}
-	return cfg.Gen.Go.OutputModelsPackage != "" &&
-		cfg.Gen.Go.ModelsPackageImportPath != ""
 }
 
 // Run processes SQLC-generated query files and qualifies bare model type
@@ -71,11 +56,6 @@ func isSQLCModern() bool {
 //     Returns nil if native SQLC qualification is enabled or if all
 //     files are successfully processed.
 func Run(modelPath, queryGlob, modelImport string) error {
-	// Check if the SQLC config is modern v2
-	if isSQLCModern() {
-		fmt.Println("Detected native SQLC model qualification, skipping qualify-models")
-		return nil
-	}
 	// Create new file set and parse the models file.
 	fset := token.NewFileSet()
 	modelFile, err := parseFile(fset, modelPath, nil, parser.ParseComments)
