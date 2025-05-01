@@ -6,56 +6,50 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/tools/go/ast/astutil"
 )
 
 var (
 	parseFile  = parser.ParseFile
-	glob       = filepath.Glob
 	createFile = os.Create
 	formatNode = format.Node
+	walkDir    = filepath.WalkDir
 )
 
-type sqlcConfig struct {
-	Gen struct {
-		Go struct {
-			OutputModelsPackage     string `yaml:"output_models_package"`
-			ModelsPackageImportPath string `yaml:"models_package_import_path"`
-		}
-	}
-}
+// Run processes Go source files under a given directory and qualifies bare
+// model type references by prefixing them with a package alias and injecting
+// the corresponding import.
 
-// Run processes SQLC-generated query files and qualifies bare model type
-// references by prefixing them with a package alias and injecting the
-// corresponding import. If SQLC v2+ native model qualification is detected
-// via isSQLCModern(), it logs a message and exits without modifying any files.
-//
 // Workflow:
-//  1. Check for native SQLC qualification support; if present, skip processing.
-//  2. Parse the models file at modelPath and collect all struct type names.
-//  3. Derive the package alias from modelImport (last path element).
-//  4. Glob for all query files matching queryGlob.
-//  5. For each file:
-//     a) Parse its AST and traverse all identifiers.
-//     b) When an identifier matches a model name and is not already
-//     part of a selector, replace it with `alias.Identifier`.
-//     c) Ensure the import for modelImport is present.
-//     d) Rewrite the file in place with `go/format`.
+//   1. Check for native SQLC qualification support; if present, skip processing.
+//   2. Parse the models file at modelPath and collect all struct type names.
+//   3. Derive the package alias from modelImport (last path element).
+//   4. Recursively walk all `.go` files under rootDir, skipping the model file
+//      itself and any vendor or hidden directories.
+//   5. For each discovered file:
+//      a) Parse its AST and traverse all identifiers.
+//      b) When an identifier matches a model name and is not already
+//         part of a selector, replace it with `alias.Identifier`.
+//      c) Ensure the import for modelImport is present.
+//      d) Overwrite the file in place using `go/format`.
 //
 // Parameters:
-//   - modelPath:       Path to the Go source file defining your models.
-//   - queryGlob:       Glob pattern to match SQLC‑generated `.sql.go` files.
-//   - modelImport:     Import path for your external models package.
+//   - modelPath:   Path to the Go source file defining your models.
+//   - rootDbDir:     Directory root in which to search for `.go` files to update.
+//   - modelImport: Import path for your external models package.
 //
 // Returns:
-//   - error: Any error encountered while parsing, globbing, or writing files.
-//     Returns nil if native SQLC qualification is enabled or if all
-//     files are successfully processed.
-func Run(modelPath, queryGlob, modelImport string) error {
+//   - error: Any error encountered while parsing, walking the directory, or
+//     writing files. Returns nil if native SQLC qualification is enabled or
+//     if all files are successfully processed.
+
+func Run(modelPath, rootDbDir, modelImport string) error {
 	// Create new file set and parse the models file.
 	fset := token.NewFileSet()
 	modelFile, err := parseFile(fset, modelPath, nil, parser.ParseComments)
@@ -83,13 +77,24 @@ func Run(modelPath, queryGlob, modelImport string) error {
 	// Create package alias from the modelImport path
 	pkgAlias := path.Base(modelImport)
 
-	// Find all query files that match the provided glob pattern.
-	files, err := glob(queryGlob)
-	if err != nil {
-		return fmt.Errorf("failed to glob query files: %w", err)
+	var files []string
+	if err := walkDir(rootDbDir, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(p, ".go") {
+			return nil
+		}
+		if filepath.Clean(p) == filepath.Clean(modelPath) {
+			return nil
+		}
+		files = append(files, p)
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to walkDir %s: %w", rootDbDir, err)
 	}
 
-	// Process the query files
+	// Process the files
 	for _, file := range files {
 		fsetQuery := token.NewFileSet()
 		queryFile, err := parseFile(fsetQuery, file, nil, parser.ParseComments)
@@ -122,13 +127,19 @@ func Run(modelPath, queryGlob, modelImport string) error {
 
 		astutil.AddImport(fsetQuery, queryFile, modelImport)
 
-		outFile, err := createFile(file)
-		if err != nil {
-			return fmt.Errorf("failed to open file %s for writing: %w", file, err)
-		}
-		defer outFile.Close()
+		// This is so the defer happens after each file is processed
+		// and not after all files are processed
+		if err := func() error {
 
-		if err := formatNode(outFile, fsetQuery, queryFile); err != nil {
+			outFile, err := createFile(file)
+
+			if err != nil {
+				return fmt.Errorf("failed to open file %s for writing: %w", file, err)
+			}
+			defer outFile.Close()
+
+			return formatNode(outFile, fsetQuery, queryFile)
+		}(); err != nil {
 			return fmt.Errorf("failed to write updated file %s: %w", file, err)
 		}
 	}

@@ -7,7 +7,7 @@ import (
 
 var (
 	modelFilePath string
-	globPattern   string
+	rootDbDir     string
 	importPath    string
 )
 
@@ -16,12 +16,12 @@ func init() {
 		Use:   "qualify-models",
 		Short: "Qualify bare model types in SQLC-generated code",
 		Long: `Parses your SQLC models file to discover the struct names, then
-re-writes the SQLC-generated .go files to qualify those types
+re-writes the SQLC-generated .go files in your database to qualify those types
 (e.g. Transaction -> models.Transaction)
 this is to be used in tandem with a script that moves
 the SQLC models into an external global models package`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return qualifymodels.Run(modelFilePath, globPattern, importPath)
+			return qualifymodels.Run(modelFilePath, rootDbDir, importPath)
 		},
 	}
 
@@ -34,11 +34,11 @@ the SQLC models into an external global models package`,
 	_ = cmd.MarkFlagRequired("models")
 
 	cmd.Flags().
-		StringVarP(&globPattern,
-			"queries",
-			"q",
+		StringVarP(&rootDbDir,
+			"rootdbdir",
+			"r",
 			"",
-			"glob matching SQLC-generated query files (e.g. internal/database/queries/*.sql.go)")
+			"root directory where your database files live (e.g. internal/database)")
 	_ = cmd.MarkFlagRequired("queries")
 
 	cmd.Flags().

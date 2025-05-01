@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
+	"io/fs"
 	"os"
 )
 
@@ -14,6 +15,7 @@ type BaseTestCase struct {
 	ExpectedContent   string
 	CreateErr         bool
 	ParseErr          bool
+	WalkErr           bool
 	GlobErr           bool
 	FormatErr         bool
 	ExpectedErrSubStr string
@@ -66,7 +68,59 @@ type AddnosecTC struct {
 //
 // Returns a tuple of four functions corresponding to parseFile, glob, createFile, and formatNode,
 // where each function may be the original or a stub that returns a simulated error.
-func ExecuteBaseTCErrors(
+func ExecuteBaseTCErrorsQM(
+	testCase BaseTestCase,
+	parseFile func(fset *token.FileSet, filename string, src any, mode parser.Mode) (f *ast.File, err error),
+	walkDir func(root string, fn fs.WalkDirFunc) error,
+	createFile func(name string) (*os.File, error),
+	formatNode func(dst io.Writer, fset *token.FileSet, node any) error,
+) (
+	func(fset *token.FileSet, filename string, src any, mode parser.Mode) (f *ast.File, err error),
+	func(root string, fn fs.WalkDirFunc) error,
+	func(name string) (*os.File, error),
+	func(dst io.Writer, fset *token.FileSet, node any) error,
+) {
+
+	pf := parseFile
+	gf := walkDir
+	cf := createFile
+	fn := formatNode
+
+	if testCase.ParseErr {
+		pf = func(fset *token.FileSet, filename string, src any, mode parser.Mode) (f *ast.File, err error) {
+			return nil, fmt.Errorf("simulated parsing error")
+		}
+		return pf, gf, cf, fn
+
+	}
+
+	if testCase.WalkErr {
+		gf = func(root string, fn fs.WalkDirFunc) error {
+			return fmt.Errorf("simulated walkDir error")
+		}
+		return pf, gf, cf, fn
+
+	}
+
+	if testCase.CreateErr {
+		cf = func(name string) (*os.File, error) {
+			return nil, fmt.Errorf("simulated create error")
+		}
+		return pf, gf, cf, fn
+
+	}
+
+	if testCase.FormatErr {
+		fn = func(dst io.Writer, fset *token.FileSet, node any) error {
+			return fmt.Errorf("simulated format error")
+		}
+		return pf, gf, cf, fn
+	}
+
+	return pf, gf, cf, fn
+}
+
+func ExecuteBaseTCErrorsANS(
 	testCase BaseTestCase,
 	parseFile func(fset *token.FileSet, filename string, src any, mode parser.Mode) (f *ast.File, err error),
 	glob func(pattern string) (matches []string, err error),
@@ -94,7 +148,7 @@ func ExecuteBaseTCErrors(
 
 	if testCase.GlobErr {
 		gf = func(pattern string) (matches []string, err error) {
-			return nil, fmt.Errorf("simluated glob error")
+			return nil, fmt.Errorf("simulated glob error")
 		}
 		return pf, gf, cf, fn
 

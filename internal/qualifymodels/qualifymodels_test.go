@@ -86,10 +86,10 @@ func Foo() {
 		},
 		{
 			BaseTestCase: helpers.BaseTestCase{
-				Name:              "simulate glob error",
+				Name:              "simulate walkDir error",
 				ExpectedContent:   "",
-				GlobErr:           true,
-				ExpectedErrSubStr: "failed to glob query files",
+				WalkErr:           true,
+				ExpectedErrSubStr: "failed to walkDir",
 			},
 			ModelContent: `package models
 type Transaction struct {}
@@ -138,7 +138,7 @@ func Foo() {
 		t.Run(tc.Name, func(t *testing.T) {
 			// reset the testing state to avoid cases bleeding over
 			parseFile = parser.ParseFile
-			glob = filepath.Glob
+			walkDir = filepath.WalkDir
 			createFile = os.Create
 			formatNode = format.Node
 
@@ -153,7 +153,7 @@ func Foo() {
 			if err := os.WriteFile(queryFile, []byte(tc.QueryContent), 0644); err != nil {
 				t.Fatalf("failed to write query file: %v", err)
 			}
-			parseFile, glob, createFile, formatNode = helpers.ExecuteBaseTCErrors(tc.BaseTestCase, parseFile, glob, createFile, formatNode)
+			parseFile, walkDir, createFile, formatNode = helpers.ExecuteBaseTCErrorsQM(tc.BaseTestCase, parseFile, walkDir, createFile, formatNode)
 
 			err := Run(modelFile, queryFile, "internal/models")
 			if tc.ExpectedErrSubStr != "" {

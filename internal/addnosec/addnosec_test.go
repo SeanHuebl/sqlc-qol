@@ -223,7 +223,7 @@ const bar = "false flagged hardcoded credentials"
 			if err := os.WriteFile(contentFile, []byte(tc.InitContent), 0644); err != nil {
 				t.Fatalf("failed to write content file: %v", err)
 			}
-			parseFile, glob, createFile, formatNode = helpers.ExecuteBaseTCErrors(tc.BaseTestCase, parseFile, glob, createFile, formatNode)
+			parseFile, glob, createFile, formatNode = helpers.ExecuteBaseTCErrorsANS(tc.BaseTestCase, parseFile, glob, createFile, formatNode)
 
 			var err error
 			var tempCSV *os.File
